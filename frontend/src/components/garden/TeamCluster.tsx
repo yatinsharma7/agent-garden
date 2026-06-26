@@ -1,6 +1,5 @@
 import { type Team, type Agent } from '@/types'
 import { AgentCard } from '@/components/agents/AgentCard'
-import { useGardenStore } from '@/lib/store'
 
 interface Props {
   team: Team

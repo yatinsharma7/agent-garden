@@ -10,7 +10,7 @@ export function App() {
   const { teams, agents, messages, activeTeamId, setTeams, setAgents, addTeam, removeTeam, addAgent, setActiveTeam } = useGardenStore()
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showAgentModal, setShowAgentModal] = useState(false)
-  const [preselectedTeam, setPreselectedTeam] = useState<string | null>(null)
+  const [_preselectedTeam, setPreselectedTeam] = useState<string | null>(null)
 
   // Team form state
   const [teamName, setTeamName] = useState('')
