@@ -1,7 +1,0 @@
-[services.backend]
-source = "backend"
-dockerfile = "Dockerfile"
-
-[services.frontend]
-source = "frontend"
-dockerfile = "Dockerfile"
