@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173"]
+    ALLOWED_ORIGINS: List[str] = ["http://localhost:5173", "https://agent-garden.up.railway.app"]
     CLAUDE_MODEL: str = "claude-sonnet-4-6"
 
     class Config:
