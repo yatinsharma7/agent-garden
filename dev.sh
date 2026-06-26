@@ -14,6 +14,7 @@ cd ..
 # Start frontend
 echo "Starting frontend..."
 cd frontend
+npm install --silent
 npm run dev &
 FRONTEND_PID=$!
 cd ..
