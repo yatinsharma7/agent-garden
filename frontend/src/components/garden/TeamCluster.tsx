@@ -11,7 +11,7 @@ interface Props {
 
 export function TeamCluster({ team, agents, messages, onAddAgent, onRemoveTeam }: Props) {
   return (
-    <div className="border border-garden-border rounded-lg bg-garden-surface overflow-hidden">
+    <div className="border border-garden-border rounded-lg bg-garden-surface">
       {/* Header */}
       <div className="flex items-center gap-3 px-4 py-3 border-b border-garden-border bg-garden-surface2">
         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: team.color }} />
