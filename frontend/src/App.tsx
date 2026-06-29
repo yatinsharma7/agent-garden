@@ -5,9 +5,28 @@ import { TeamCluster } from '@/components/garden/TeamCluster'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { TEAM_COLORS, ALL_ROLES } from '@/lib/constants'
 import type { AgentRole } from '@/types'
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
+function SortableTeamCluster(props: React.ComponentProps<typeof TeamCluster>) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.team.id })
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    cursor: 'grab',
+  }
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <TeamCluster {...props} />
+    </div>
+  )
+}
 
 export function App() {
-  const { teams, agents, messages, activeTeamId, setTeams, setAgents, addTeam, removeTeam, addAgent, setActiveTeam } = useGardenStore()
+  const { teams, agents, messages, activeTeamId, teamOrder, setTeams, setAgents, addTeam, removeTeam, addAgent, setActiveTeam, setTeamOrder } = useGardenStore()
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showAgentModal, setShowAgentModal] = useState(false)
   const [_preselectedTeam, setPreselectedTeam] = useState<string | null>(null)
@@ -23,18 +42,36 @@ export function App() {
   const [agentTeam, setAgentTeam] = useState('')
   const [agentSpecialty, setAgentSpecialty] = useState('')
 
+  const sensors = useSensors(useSensor(PointerSensor))
+
   // Load data
   useEffect(() => {
-    teamsApi.list().then(setTeams)
+    teamsApi.list().then(data => {
+      setTeams(data)
+      if (teamOrder.length === 0) setTeamOrder(data.map(t => t.id))
+    })
     agentsApi.list().then(setAgents)
   }, [])
 
-  const visibleTeams = activeTeamId ? teams.filter(t => t.id === activeTeamId) : teams
+  const orderedTeams = teamOrder.length > 0
+    ? [...teams].sort((a, b) => teamOrder.indexOf(a.id) - teamOrder.indexOf(b.id))
+    : teams
+
+  const visibleTeams = activeTeamId ? teams.filter(t => t.id === activeTeamId) : orderedTeams
+
+  const handleDragEnd = (event: { active: { id: string | number }, over: { id: string | number } | null }) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = teamOrder.indexOf(String(active.id))
+    const newIndex = teamOrder.indexOf(String(over.id))
+    setTeamOrder(arrayMove(teamOrder, oldIndex, newIndex))
+  }
 
   const handleAddTeam = async () => {
     if (!teamName.trim()) return
     const team = await teamsApi.create({ name: teamName, field: teamField || 'General', color: teamColor })
     addTeam(team)
+    setTeamOrder([...teamOrder, team.id])
     setTeamName(''); setTeamField(''); setTeamColor(TEAM_COLORS[0].value)
     setShowTeamModal(false)
   }
@@ -148,7 +185,7 @@ export function App() {
                 <span className="text-5xl opacity-40">🌱</span>
                 <p className="text-sm">No teams yet. Create a team to get started.</p>
               </div>
-            ) : visibleTeams.map(team => (
+            ) : activeTeamId ? visibleTeams.map(team => (
               <TeamCluster
                 key={team.id}
                 team={team}
@@ -157,7 +194,22 @@ export function App() {
                 onAddAgent={openAgentModal}
                 onRemoveTeam={handleRemoveTeam}
               />
-            ))}
+            )) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={teamOrder} strategy={verticalListSortingStrategy}>
+                  {visibleTeams.map(team => (
+                    <SortableTeamCluster
+                      key={team.id}
+                      team={team}
+                      agents={agents.filter(a => a.team_id === team.id)}
+                      messages={messages}
+                      onAddAgent={openAgentModal}
+                      onRemoveTeam={handleRemoveTeam}
+                    />
+                  ))}
+                </SortableContext>
+              </DndContext>
+            )}
           </div>
 
           {/* STATUS BAR */}

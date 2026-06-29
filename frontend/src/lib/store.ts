@@ -11,9 +11,11 @@ interface GardenStore {
   activeTeamId: string | null
   activeAgentId: string | null
   panelOpen: boolean
+  teamOrder: string[] // ordered team ids
 
   // Actions
   setTeams: (teams: Team[]) => void
+  setTeamOrder: (order: string[]) => void
   setAgents: (agents: Agent[]) => void
   addTeam: (team: Team) => void
   updateTeam: (team: Team) => void
@@ -37,8 +39,13 @@ export const useGardenStore = create<GardenStore>((set) => ({
   activeTeamId: null,
   activeAgentId: null,
   panelOpen: false,
+  teamOrder: JSON.parse(localStorage.getItem('teamOrder') || '[]'),
 
   setTeams: (teams) => set({ teams }),
+  setTeamOrder: (order) => {
+    localStorage.setItem('teamOrder', JSON.stringify(order))
+    set({ teamOrder: order })
+  },
   setAgents: (agents) => set({ agents }),
 
   addTeam: (team) => set((s) => ({ teams: [...s.teams, team] })),
