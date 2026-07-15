@@ -4,6 +4,7 @@ from anthropic import AsyncAnthropic
 from app.schemas import ChatRequest, ChatResponse, ChatMessage, MessageRole
 from app.core.supabase import get_supabase
 from app.core.config import settings
+from app.core.tools import TOOL_DEFINITIONS, execute_tool
 import json
 
 router = APIRouter()
@@ -66,14 +67,53 @@ async def chat(payload: ChatRequest):
     messages.append({"role": "user", "content": payload.message})
 
     try:
-        response = await anthropic.messages.create(
-            model=settings.CLAUDE_MODEL,
-            max_tokens=1024,
-            system=build_system_prompt(agent, team),
-            messages=messages,
-        )
-        reply = response.content[0].text
-        usage = {"input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens}
+        total_usage = {"input_tokens": 0, "output_tokens": 0}
+        tools_used = []
+        reply = None
+
+        # Agentic loop — keep calling Claude until it gives a final text response
+        while True:
+            response = await anthropic.messages.create(
+                model=settings.CLAUDE_MODEL,
+                max_tokens=1024,
+                system=build_system_prompt(agent, team),
+                messages=messages,
+                tools=TOOL_DEFINITIONS,
+            )
+
+            total_usage["input_tokens"] += response.usage.input_tokens
+            total_usage["output_tokens"] += response.usage.output_tokens
+
+            # Claude finished with a text response — done
+            if response.stop_reason == "end_turn":
+                reply = next(b.text for b in response.content if hasattr(b, "text"))
+                break
+
+            # Claude wants to call a tool
+            if response.stop_reason == "tool_use":
+                # Add Claude's response to messages
+                messages.append({"role": "assistant", "content": response.content})
+
+                # Execute each tool Claude requested and collect results
+                tool_results = []
+                for block in response.content:
+                    if block.type == "tool_use":
+                        tools_used.append(block.name)
+                        result = execute_tool(block.name, block.input)
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": block.id,
+                            "content": result,
+                        })
+
+                # Send tool results back to Claude
+                messages.append({"role": "user", "content": tool_results})
+                continue
+
+            # Unexpected stop reason
+            break
+
+        usage = total_usage
 
         # Store assistant reply
         sb.table("messages").insert({
@@ -89,6 +129,7 @@ async def chat(payload: ChatRequest):
             agent_id=payload.agent_id,
             message=ChatMessage(role=MessageRole.assistant, content=reply),
             usage=usage,
+            tools_used=tools_used,
         )
 
     except Exception as e:

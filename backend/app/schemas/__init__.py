@@ -96,6 +96,7 @@ class ChatResponse(BaseModel):
     agent_id: UUID4
     message: ChatMessage
     usage: Optional[dict] = None
+    tools_used: list[str] = []
 
 
 # ── MESSAGES (history) ──
