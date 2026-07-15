@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useGardenStore } from '@/lib/store'
-import { chatApi } from '@/lib/api'
+import { chatApi, teamsApi, agentsApi } from '@/lib/api'
 import { ROLE_EMOJIS } from '@/lib/constants'
 import type { Message } from '@/types'
 import clsx from 'clsx'
 
+const WRITE_TOOLS = ['create_agent', 'create_team', 'delete_agent', 'delete_team', 'update_agent_status']
+
 export function ChatPanel() {
-  const { teams, agents, activeAgentId, panelOpen, messages, setMessages, appendMessage, updateAgent, closePanel } = useGardenStore()
+  const { teams, agents, activeAgentId, panelOpen, messages, setMessages, appendMessage, updateAgent, setTeams, setAgents, closePanel } = useGardenStore()
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -55,6 +57,13 @@ export function ChatPanel() {
       }
       appendMessage(activeAgentId, assistantMsg)
       updateAgent({ ...agent, status: 'done' })
+
+      // Re-fetch data if Claude called any write tools
+      if (res.tools_used?.some((t: string) => WRITE_TOOLS.includes(t))) {
+        const [updatedTeams, updatedAgents] = await Promise.all([teamsApi.list(), agentsApi.list()])
+        setTeams(updatedTeams)
+        setAgents(updatedAgents)
+      }
     } catch {
       updateAgent({ ...agent, status: 'error' })
     } finally {

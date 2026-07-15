@@ -46,4 +46,5 @@ export interface ChatResponse {
   agent_id: string
   message: { role: MessageRole; content: string }
   usage?: { input_tokens: number; output_tokens: number }
+  tools_used?: string[]
 }

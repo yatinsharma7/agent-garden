@@ -68,6 +68,7 @@ async def chat(payload: ChatRequest):
 
     try:
         total_usage = {"input_tokens": 0, "output_tokens": 0}
+        tools_used = []
         reply = None
 
         # Agentic loop — keep calling Claude until it gives a final text response
@@ -97,6 +98,7 @@ async def chat(payload: ChatRequest):
                 tool_results = []
                 for block in response.content:
                     if block.type == "tool_use":
+                        tools_used.append(block.name)
                         result = execute_tool(block.name, block.input)
                         tool_results.append({
                             "type": "tool_result",
@@ -127,6 +129,7 @@ async def chat(payload: ChatRequest):
             agent_id=payload.agent_id,
             message=ChatMessage(role=MessageRole.assistant, content=reply),
             usage=usage,
+            tools_used=tools_used,
         )
 
     except Exception as e:
