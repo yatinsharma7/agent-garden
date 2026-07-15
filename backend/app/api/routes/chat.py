@@ -115,15 +115,15 @@ async def chat(payload: ChatRequest):
 
         usage = total_usage
 
-        # Store assistant reply
-        sb.table("messages").insert({
-            "agent_id": str(payload.agent_id),
-            "role": "assistant",
-            "content": reply,
-        }).execute()
-
-        # Update agent status
-        sb.table("agents").update({"status": "done"}).eq("id", str(payload.agent_id)).execute()
+        # Only store reply and update status if agent still exists
+        agent_still_exists = sb.table("agents").select("id").eq("id", str(payload.agent_id)).execute().data
+        if agent_still_exists:
+            sb.table("messages").insert({
+                "agent_id": str(payload.agent_id),
+                "role": "assistant",
+                "content": reply,
+            }).execute()
+            sb.table("agents").update({"status": "done"}).eq("id", str(payload.agent_id)).execute()
 
         return ChatResponse(
             agent_id=payload.agent_id,
