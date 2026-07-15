@@ -2,8 +2,15 @@ from supabase import create_client, Client
 import os
 
 def get_client() -> Client:
-    url = os.environ["SUPABASE_URL"]
-    key = os.environ["SUPABASE_SERVICE_KEY"]
+    url = os.environ.get("SUPABASE_URL") or os.environ.get("supabase_url", "")
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or os.environ.get("supabase_service_key", "")
+    if not url or not key:
+        try:
+            from app.core.config import settings
+            url = settings.SUPABASE_URL
+            key = settings.SUPABASE_SERVICE_KEY
+        except ImportError:
+            raise RuntimeError("SUPABASE_URL and SUPABASE_SERVICE_KEY not found in environment or FastAPI settings")
     return create_client(url, key)
 
 
