@@ -1,11 +1,36 @@
-import sys
-import os
+from app.core.supabase import get_supabase
 
-# Add MCP supabase tools to path so we can import them directly
-MCP_SUPABASE_PATH = os.path.join(os.path.dirname(__file__), "../../..", "mcp", "supabase")
-sys.path.insert(0, os.path.abspath(MCP_SUPABASE_PATH))
 
-import tools as supabase_tools
+def get_teams() -> list:
+    return get_supabase().table("teams").select("*").order("created_at").execute().data
+
+def get_agents(team_id: str = None) -> list:
+    q = get_supabase().table("agents").select("*")
+    if team_id:
+        q = q.eq("team_id", team_id)
+    return q.execute().data
+
+def get_agent(agent_id: str) -> dict:
+    return get_supabase().table("agents").select("*").eq("id", agent_id).single().execute().data
+
+def update_agent_status(agent_id: str, status: str) -> dict:
+    return get_supabase().table("agents").update({"status": status}).eq("id", agent_id).execute().data
+
+def create_team(name: str, field: str, color: str = "#22c55e") -> dict:
+    return get_supabase().table("teams").insert({"name": name, "field": field, "color": color}).execute().data
+
+def create_agent(name: str, role: str, team_id: str, specialty: str = "") -> dict:
+    return get_supabase().table("agents").insert({"name": name, "role": role, "team_id": team_id, "specialty": specialty, "status": "idle"}).execute().data
+
+def delete_agent(agent_id: str) -> dict:
+    return get_supabase().table("agents").delete().eq("id", agent_id).execute().data
+
+def delete_team(team_id: str) -> dict:
+    sb = get_supabase()
+    sb.table("agents").delete().eq("team_id", team_id).execute()
+    return sb.table("teams").delete().eq("id", team_id).execute().data
+
+
 
 
 # Tool definitions — Claude reads these to know what tools exist and when to call them
@@ -120,21 +145,21 @@ def execute_tool(name: str, inputs: dict) -> str:
     import json
 
     if name == "get_teams":
-        result = supabase_tools.get_teams()
+        result = get_teams()
     elif name == "get_agents":
-        result = supabase_tools.get_agents(inputs.get("team_id"))
+        result = get_agents(inputs.get("team_id"))
     elif name == "get_agent":
-        result = supabase_tools.get_agent(inputs["agent_id"])
+        result = get_agent(inputs["agent_id"])
     elif name == "update_agent_status":
-        result = supabase_tools.update_agent_status(inputs["agent_id"], inputs["status"])
+        result = update_agent_status(inputs["agent_id"], inputs["status"])
     elif name == "create_team":
-        result = supabase_tools.create_team(inputs["name"], inputs["field"], inputs.get("color", "#22c55e"))
+        result = create_team(inputs["name"], inputs["field"], inputs.get("color", "#22c55e"))
     elif name == "create_agent":
-        result = supabase_tools.create_agent(inputs["name"], inputs["role"], inputs["team_id"], inputs.get("specialty", ""))
+        result = create_agent(inputs["name"], inputs["role"], inputs["team_id"], inputs.get("specialty", ""))
     elif name == "delete_agent":
-        result = supabase_tools.delete_agent(inputs["agent_id"])
+        result = delete_agent(inputs["agent_id"])
     elif name == "delete_team":
-        result = supabase_tools.delete_team(inputs["team_id"])
+        result = delete_team(inputs["team_id"])
     else:
         return f"Unknown tool: {name}"
 
