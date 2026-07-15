@@ -51,7 +51,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "team_id": {
                     "type": "string",
-                    "description": "Filter agents by this team ID (optional)",
+                    "description": "Filter agents by this team ID (optional). Always use the full UUID, never truncate.",
                 }
             },
         },
@@ -64,7 +64,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "agent_id": {
                     "type": "string",
-                    "description": "The ID of the agent to fetch",
+                    "description": "The full UUID of the agent e.g. ef04f553-d881-4d1c-922f-b7e9c1737a10. Always use the complete UUID, never truncate.",
                 }
             },
             "required": ["agent_id"],
@@ -78,7 +78,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "agent_id": {
                     "type": "string",
-                    "description": "The ID of the agent to update",
+                    "description": "The full UUID of the agent to update. Always use the complete UUID, never truncate.",
                 },
                 "status": {
                     "type": "string",
@@ -109,7 +109,7 @@ TOOL_DEFINITIONS = [
             "properties": {
                 "name": {"type": "string", "description": "Agent name"},
                 "role": {"type": "string", "description": "Agent role e.g. Engineer, Architect, Lead"},
-                "team_id": {"type": "string", "description": "ID of the team to assign the agent to"},
+                "team_id": {"type": "string", "description": "The full UUID of the team to assign the agent to. Always use the complete UUID, never truncate."},
                 "specialty": {"type": "string", "description": "Agent specialty or focus area (optional)"},
             },
             "required": ["name", "role", "team_id"],
@@ -121,7 +121,7 @@ TOOL_DEFINITIONS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "agent_id": {"type": "string", "description": "The ID of the agent to delete"},
+                "agent_id": {"type": "string", "description": "The full UUID of the agent to delete. Always use the complete UUID, never truncate."},
             },
             "required": ["agent_id"],
         },
@@ -132,7 +132,7 @@ TOOL_DEFINITIONS = [
         "input_schema": {
             "type": "object",
             "properties": {
-                "team_id": {"type": "string", "description": "The ID of the team to delete"},
+                "team_id": {"type": "string", "description": "The full UUID of the team to delete. Always use the complete UUID, never truncate."},
             },
             "required": ["team_id"],
         },

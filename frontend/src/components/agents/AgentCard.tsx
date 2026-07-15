@@ -20,10 +20,9 @@ export function AgentCard({ agent, team, lastMessage }: Props) {
   return (
     <div
       className={clsx(
-        'bg-garden-bg border rounded-md p-3 cursor-pointer transition-all',
+        'bg-garden-bg border rounded-md p-3 transition-all',
         isActive ? 'border-garden-accent' : 'border-garden-border hover:border-garden-border2 hover:-translate-y-px'
       )}
-      onClick={() => openPanel(agent.id)}
     >
       {/* Header */}
       <div className="flex items-start gap-2 mb-2">
@@ -71,7 +70,8 @@ export function AgentCard({ agent, team, lastMessage }: Props) {
         <span className="font-mono text-[9px] text-garden-dim tracking-wide">{agent.specialty || ''}</span>
         <button
           className="font-mono text-[10px] px-2 py-0.5 bg-garden-accent/10 text-garden-accent border border-garden-border2 rounded hover:bg-garden-accent hover:text-garden-bg transition-all"
-          onClick={(e) => { e.stopPropagation(); openPanel(agent.id) }}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => { e.stopPropagation(); openPanel(agent.id) }}
         >
           CHAT →
         </button>

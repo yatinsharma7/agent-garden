@@ -221,9 +221,10 @@ export function App() {
           </div>
         </div>
 
-        {/* CHAT PANEL */}
-        <ChatPanel />
       </div>
+
+      {/* CHAT PANEL — full screen overlay */}
+      <ChatPanel />
 
       {/* TEAM MODAL */}
       {showTeamModal && (
