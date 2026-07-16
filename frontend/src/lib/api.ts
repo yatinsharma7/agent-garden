@@ -36,4 +36,14 @@ export const chatApi = {
     api.delete(`/api/chat/${agentId}/history`),
 }
 
+// ── AUTH / CONNECTIONS ──
+export const authApi = {
+  listConnections: () =>
+    api.get<Record<string, { connected: boolean; expired: boolean; scope: string; connected_at: string }>>('/auth/connections').then(r => r.data),
+  connectAdobe: () => {
+    window.location.href = `${api.defaults.baseURL}/auth/connect/adobe`
+  },
+  disconnect: (provider: string) => api.delete(`/auth/connections/${provider}`),
+}
+
 export default api

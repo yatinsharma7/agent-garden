@@ -10,6 +10,13 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = ["http://localhost:5173", "https://agent-garden.up.railway.app"]
     CLAUDE_MODEL: str = "claude-sonnet-4-6"
 
+    # Adobe OAuth
+    ADOBE_CLIENT_ID: str = ""
+    ADOBE_CLIENT_SECRET: str = ""
+    ADOBE_REDIRECT_URI: str = "http://localhost:8000/auth/callback/adobe"
+    ADOBE_MOCK: bool = False
+    FRONTEND_URL: str = "http://localhost:5173"  # override in Railway with production URL
+
     class Config:
         env_file = ".env"
         extra = "ignore"
