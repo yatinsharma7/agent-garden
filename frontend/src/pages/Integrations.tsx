@@ -64,18 +64,16 @@ export function Integrations() {
     <div className="flex flex-col h-screen bg-garden-bg text-garden-text font-sans overflow-hidden pb-[60px] md:pb-0">
 
       {/* Header */}
-      <div className="flex items-center justify-between px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
-        <div className="flex items-center gap-4">
-          <div className="font-mono text-sm font-semibold text-garden-accent tracking-widest">
-            AGENT<span className="text-garden-muted font-normal">GARDEN</span>
-          </div>
-          <div className="font-mono text-[11px] text-garden-muted flex items-center gap-1.5">
-            <span>org</span><span className="text-garden-dim">/</span>
-            <span>garden</span><span className="text-garden-dim">/</span>
-            <span className="text-garden-text">integrations</span>
-          </div>
+      <div className="flex items-center justify-between px-4 md:px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
+        <div className="font-mono text-sm font-semibold text-garden-accent tracking-widest">
+          AGENT<span className="text-garden-muted font-normal">GARDEN</span>
         </div>
-        <a href="/" className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all">
+        <div className="hidden md:flex font-mono text-[11px] text-garden-muted items-center gap-1.5">
+          <span>org</span><span className="text-garden-dim">/</span>
+          <span>garden</span><span className="text-garden-dim">/</span>
+          <span className="text-garden-text">integrations</span>
+        </div>
+        <a href="/" className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all">
           ← Garden
         </a>
       </div>
