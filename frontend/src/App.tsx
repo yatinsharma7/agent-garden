@@ -114,6 +114,9 @@ export function App() {
           </div>
         </div>
         <div className="flex gap-2">
+          <a href="/integrations" className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
+            Integrations
+          </a>
           <button onClick={() => setShowTeamModal(true)} className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
             + Team
           </button>
