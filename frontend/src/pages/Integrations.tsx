@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { authApi } from '@/lib/api'
+import { BottomNav } from '@/components/nav/BottomNav'
 
 interface Connection {
   connected: boolean
@@ -60,7 +61,7 @@ export function Integrations() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-garden-bg text-garden-text font-sans overflow-hidden">
+    <div className="flex flex-col h-screen bg-garden-bg text-garden-text font-sans overflow-hidden pb-[60px] md:pb-0">
 
       {/* Header */}
       <div className="flex items-center justify-between px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
@@ -166,6 +167,8 @@ export function Integrations() {
           </div>
         )}
       </div>
+
+      <BottomNav onAdd={() => {}} />
     </div>
   )
 }
