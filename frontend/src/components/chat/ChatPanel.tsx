@@ -16,6 +16,7 @@ export function ChatPanel() {
 
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
@@ -109,18 +110,23 @@ export function ChatPanel() {
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center md:p-6"
       onClick={closePanel}
     >
       <div
-        className="relative bg-garden-surface border border-garden-border2 rounded-xl shadow-2xl flex w-full max-w-5xl h-[85vh] overflow-hidden"
+        className="relative bg-garden-surface border border-garden-border2 md:rounded-xl shadow-2xl flex w-full max-w-5xl h-[92vh] md:h-[85vh] overflow-hidden rounded-t-xl"
         onClick={e => e.stopPropagation()}
       >
 
-        {/* LEFT — Conversation history */}
-        <div className="w-[220px] flex-shrink-0 border-r border-garden-border bg-garden-bg flex flex-col">
-          <div className="px-4 py-3 border-b border-garden-border">
+        {/* LEFT — Conversation history (hidden on mobile unless toggled) */}
+        <div className={`
+          ${showHistory ? 'flex' : 'hidden'} md:flex
+          w-full md:w-[220px] flex-shrink-0 border-r border-garden-border bg-garden-bg flex-col
+          absolute md:relative inset-0 z-10 md:z-auto
+        `}>
+          <div className="px-4 py-3 border-b border-garden-border flex items-center justify-between">
             <div className="font-mono text-[10px] text-garden-dim tracking-widest uppercase">History</div>
+            <button className="md:hidden text-garden-dim hover:text-garden-text text-sm" onClick={() => setShowHistory(false)}>✕</button>
           </div>
           <div className="flex-1 overflow-y-auto py-2">
             {history.length === 0 ? (
@@ -149,7 +155,7 @@ export function ChatPanel() {
         <div className="flex-1 flex flex-col min-w-0">
 
           {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-garden-border bg-garden-surface2 flex-shrink-0">
+          <div className="flex items-center gap-2 md:gap-3 px-4 md:px-6 py-3 md:py-4 border-b border-garden-border bg-garden-surface2 flex-shrink-0">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0 border"
               style={{ background: `${roleColor}18`, borderColor: `${roleColor}33` }}
@@ -162,7 +168,16 @@ export function ChatPanel() {
                 {agent.role}{agent.specialty ? ` · ${agent.specialty}` : ''} · {team?.name}
               </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 md:gap-3">
+              <button
+                className="md:hidden text-garden-dim hover:text-garden-text p-1"
+                onClick={() => setShowHistory(true)}
+                title="Show history"
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M2 3h12M2 8h8M2 13h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </button>
               <div className="flex items-center gap-1.5">
                 <div className={clsx('w-2 h-2 rounded-full', {
                   'bg-garden-dim': agent.status === 'idle',
@@ -180,7 +195,7 @@ export function ChatPanel() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
+          <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 flex flex-col gap-4">
             {history.length === 0 && (
               <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 py-12">
                 <div
@@ -247,7 +262,7 @@ export function ChatPanel() {
           </div>
 
           {/* Input */}
-          <div className="px-6 py-4 border-t border-garden-border flex-shrink-0">
+          <div className="px-3 md:px-6 py-3 md:py-4 border-t border-garden-border flex-shrink-0">
             <div className="flex gap-3 items-end">
               <textarea
                 ref={textareaRef}
@@ -267,7 +282,7 @@ export function ChatPanel() {
                 SEND
               </button>
             </div>
-            <div className="font-mono text-[10px] text-garden-dim mt-2 text-center">
+            <div className="hidden md:block font-mono text-[10px] text-garden-dim mt-2 text-center">
               Enter to send · Shift+Enter for new line · Esc to close
             </div>
           </div>

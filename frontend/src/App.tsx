@@ -30,6 +30,7 @@ export function App() {
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showAgentModal, setShowAgentModal] = useState(false)
   const [_preselectedTeam, setPreselectedTeam] = useState<string | null>(null)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Team form state
   const [teamName, setTeamName] = useState('')
@@ -42,7 +43,9 @@ export function App() {
   const [agentTeam, setAgentTeam] = useState('')
   const [agentSpecialty, setAgentSpecialty] = useState('')
 
-  const sensors = useSensors(useSensor(PointerSensor))
+  const sensors = useSensors(useSensor(PointerSensor, {
+    activationConstraint: { distance: 8 },
+  }))
 
   // Load data
   useEffect(() => {
@@ -102,39 +105,61 @@ export function App() {
     <div className="flex flex-col h-screen bg-garden-bg text-garden-text font-sans overflow-hidden">
 
       {/* TOP BAR */}
-      <div className="flex items-center justify-between px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
-        <div className="flex items-center gap-4">
+      <div className="flex items-center justify-between px-4 md:px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
+        <div className="flex items-center gap-3">
+          {/* Hamburger — mobile only */}
+          <button
+            className="md:hidden text-garden-muted hover:text-garden-text p-1"
+            onClick={() => setSidebarOpen(v => !v)}
+          >
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </button>
           <div className="font-mono text-sm font-semibold text-garden-accent tracking-widest">
             AGENT<span className="text-garden-muted font-normal">GARDEN</span>
           </div>
-          <div className="font-mono text-[11px] text-garden-muted flex items-center gap-1.5">
+          <div className="hidden md:flex font-mono text-[11px] text-garden-muted items-center gap-1.5">
             <span>org</span><span className="text-garden-dim">/</span>
             <span>garden</span><span className="text-garden-dim">/</span>
             <span className="text-garden-text">v0.1</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <a href="/integrations" className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
+        <div className="flex gap-1.5 md:gap-2">
+          <a href="/integrations" className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
             Integrations
           </a>
-          <button onClick={() => setShowTeamModal(true)} className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
+          <button onClick={() => setShowTeamModal(true)} className="font-mono text-[11px] px-2.5 md:px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
             + Team
           </button>
-          <button onClick={() => openAgentModal()} className="font-mono text-[11px] px-3 py-1.5 bg-garden-accent text-garden-bg border border-garden-accent rounded font-semibold hover:bg-garden-accent2 transition-all">
+          <button onClick={() => openAgentModal()} className="font-mono text-[11px] px-2.5 md:px-3 py-1.5 bg-garden-accent text-garden-bg border border-garden-accent rounded font-semibold hover:bg-garden-accent2 transition-all">
             + Agent
           </button>
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+
+        {/* Mobile sidebar backdrop */}
+        {sidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-20 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
         {/* SIDEBAR */}
-        <div className="w-[240px] bg-garden-surface border-r border-garden-border flex flex-col flex-shrink-0 overflow-y-auto">
+        <div className={`
+          fixed md:relative z-30 md:z-auto top-[52px] md:top-auto left-0 bottom-0 md:bottom-auto
+          w-[240px] bg-garden-surface border-r border-garden-border flex flex-col flex-shrink-0 overflow-y-auto
+          transition-transform duration-200
+          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+        `}>
           <div className="p-4">
             <div className="font-mono text-[10px] font-semibold text-garden-dim tracking-widest uppercase mb-2">Teams</div>
             <div
               className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer mb-0.5 border ${activeTeamId === null ? 'bg-garden-accent/10 border-garden-border2' : 'border-transparent hover:bg-garden-surface2'}`}
-              onClick={() => setActiveTeam(null)}
+              onClick={() => { setActiveTeam(null); setSidebarOpen(false) }}
             >
               <div className="w-2 h-2 rounded-full bg-garden-muted" />
               <span className="text-sm flex-1">All Teams</span>
@@ -144,7 +169,7 @@ export function App() {
               <div
                 key={t.id}
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer mb-0.5 border ${activeTeamId === t.id ? 'bg-garden-accent/10 border-garden-border2' : 'border-transparent hover:bg-garden-surface2'}`}
-                onClick={() => setActiveTeam(t.id)}
+                onClick={() => { setActiveTeam(t.id); setSidebarOpen(false) }}
               >
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                 <span className="text-sm flex-1 truncate">{t.name}</span>
@@ -173,7 +198,7 @@ export function App() {
 
         {/* MAIN */}
         <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-6 pt-4 flex-shrink-0">
+          <div className="px-4 md:px-6 pt-4 flex-shrink-0">
             <div className="text-lg font-semibold">{activeTeamId ? teams.find(t => t.id === activeTeamId)?.name : 'Garden Overview'}</div>
             <div className="text-xs text-garden-muted mt-0.5">
               {activeTeamId
@@ -182,7 +207,7 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-4">
+          <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 flex flex-col gap-4">
             {visibleTeams.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-garden-dim gap-3">
                 <span className="text-5xl opacity-40">🌱</span>
@@ -232,7 +257,7 @@ export function App() {
       {/* TEAM MODAL */}
       {showTeamModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onClick={() => setShowTeamModal(false)}>
-          <div className="bg-garden-surface border border-garden-border2 rounded-lg p-6 w-[420px]" onClick={e => e.stopPropagation()}>
+          <div className="bg-garden-surface border border-garden-border2 rounded-lg p-6 w-full max-w-[420px] mx-4" onClick={e => e.stopPropagation()}>
             <div className="text-base font-semibold mb-4">New Team</div>
             <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">TEAM NAME</label>
             <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Platform Engineering" value={teamName} onChange={e => setTeamName(e.target.value)} autoFocus />
@@ -253,7 +278,7 @@ export function App() {
       {/* AGENT MODAL */}
       {showAgentModal && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onClick={() => setShowAgentModal(false)}>
-          <div className="bg-garden-surface border border-garden-border2 rounded-lg p-6 w-[420px]" onClick={e => e.stopPropagation()}>
+          <div className="bg-garden-surface border border-garden-border2 rounded-lg p-6 w-full max-w-[420px] mx-4" onClick={e => e.stopPropagation()}>
             <div className="text-base font-semibold mb-4">Deploy Agent</div>
             <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">AGENT NAME</label>
             <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Nova, Axiom, Codexa" value={agentName} onChange={e => setAgentName(e.target.value)} autoFocus />
