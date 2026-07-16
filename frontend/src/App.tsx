@@ -3,6 +3,7 @@ import { useGardenStore } from '@/lib/store'
 import { teamsApi, agentsApi } from '@/lib/api'
 import { TeamCluster } from '@/components/garden/TeamCluster'
 import { ChatPanel } from '@/components/chat/ChatPanel'
+import { BottomNav } from '@/components/nav/BottomNav'
 import { TEAM_COLORS, ALL_ROLES } from '@/lib/constants'
 import type { AgentRole } from '@/types'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
@@ -29,8 +30,8 @@ export function App() {
   const { teams, agents, messages, activeTeamId, teamOrder, setTeams, setAgents, addTeam, removeTeam, addAgent, setActiveTeam, setTeamOrder } = useGardenStore()
   const [showTeamModal, setShowTeamModal] = useState(false)
   const [showAgentModal, setShowAgentModal] = useState(false)
+  const [showAddSheet, setShowAddSheet] = useState(false)
   const [_preselectedTeam, setPreselectedTeam] = useState<string | null>(null)
-  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Team form state
   const [teamName, setTeamName] = useState('')
@@ -107,15 +108,6 @@ export function App() {
       {/* TOP BAR */}
       <div className="flex items-center justify-between px-4 md:px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
         <div className="flex items-center gap-3">
-          {/* Hamburger — mobile only */}
-          <button
-            className="md:hidden text-garden-muted hover:text-garden-text p-1"
-            onClick={() => setSidebarOpen(v => !v)}
-          >
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M2 4h14M2 9h14M2 14h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-          </button>
           <div className="font-mono text-sm font-semibold text-garden-accent tracking-widest">
             AGENT<span className="text-garden-muted font-normal">GARDEN</span>
           </div>
@@ -125,14 +117,14 @@ export function App() {
             <span className="text-garden-text">v0.1</span>
           </div>
         </div>
-        <div className="flex gap-1.5 md:gap-2">
+        <div className="flex gap-2">
           <a href="/integrations" className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
             Integrations
           </a>
-          <button onClick={() => setShowTeamModal(true)} className="font-mono text-[11px] px-2.5 md:px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
+          <button onClick={() => setShowTeamModal(true)} className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
             + Team
           </button>
-          <button onClick={() => openAgentModal()} className="font-mono text-[11px] px-2.5 md:px-3 py-1.5 bg-garden-accent text-garden-bg border border-garden-accent rounded font-semibold hover:bg-garden-accent2 transition-all">
+          <button onClick={() => openAgentModal()} className="hidden md:block font-mono text-[11px] px-3 py-1.5 bg-garden-accent text-garden-bg border border-garden-accent rounded font-semibold hover:bg-garden-accent2 transition-all">
             + Agent
           </button>
         </div>
@@ -140,26 +132,13 @@ export function App() {
 
       <div className="flex flex-1 overflow-hidden relative">
 
-        {/* Mobile sidebar backdrop */}
-        {sidebarOpen && (
-          <div
-            className="md:hidden fixed inset-0 z-20 bg-black/50"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
-
-        {/* SIDEBAR */}
-        <div className={`
-          fixed md:relative z-30 md:z-auto top-[52px] md:top-auto left-0 bottom-0 md:bottom-auto
-          w-[240px] bg-garden-surface border-r border-garden-border flex flex-col flex-shrink-0 overflow-y-auto
-          transition-transform duration-200
-          ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-        `}>
+        {/* SIDEBAR — desktop only */}
+        <div className="hidden md:flex w-[240px] bg-garden-surface border-r border-garden-border flex-col flex-shrink-0 overflow-y-auto">
           <div className="p-4">
             <div className="font-mono text-[10px] font-semibold text-garden-dim tracking-widest uppercase mb-2">Teams</div>
             <div
               className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer mb-0.5 border ${activeTeamId === null ? 'bg-garden-accent/10 border-garden-border2' : 'border-transparent hover:bg-garden-surface2'}`}
-              onClick={() => { setActiveTeam(null); setSidebarOpen(false) }}
+              onClick={() => setActiveTeam(null)}
             >
               <div className="w-2 h-2 rounded-full bg-garden-muted" />
               <span className="text-sm flex-1">All Teams</span>
@@ -169,7 +148,7 @@ export function App() {
               <div
                 key={t.id}
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer mb-0.5 border ${activeTeamId === t.id ? 'bg-garden-accent/10 border-garden-border2' : 'border-transparent hover:bg-garden-surface2'}`}
-                onClick={() => { setActiveTeam(t.id); setSidebarOpen(false) }}
+                onClick={() => setActiveTeam(t.id)}
               >
                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                 <span className="text-sm flex-1 truncate">{t.name}</span>
@@ -182,6 +161,7 @@ export function App() {
             >
               <span>＋</span><span>New Team</span>
             </div>
+
           </div>
 
           {/* Role legend */}
@@ -207,7 +187,7 @@ export function App() {
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 flex flex-col gap-4">
+          <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-20 md:pb-4 flex flex-col gap-4">
             {visibleTeams.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center text-garden-dim gap-3">
                 <span className="text-5xl opacity-40">🌱</span>
@@ -253,6 +233,39 @@ export function App() {
 
       {/* CHAT PANEL — full screen overlay */}
       <ChatPanel />
+
+      {/* BOTTOM NAV — mobile only */}
+      <BottomNav onAdd={() => setShowAddSheet(true)} />
+
+      {/* MOBILE ADD SHEET */}
+      {showAddSheet && (
+        <div className="md:hidden fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowAddSheet(false)}>
+          <div className="w-full bg-garden-surface rounded-t-2xl p-6 pb-10" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-garden-border2 rounded-full mx-auto mb-6" />
+            <div className="font-mono text-[10px] text-garden-dim tracking-widest uppercase mb-4">Add</div>
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-garden-bg border border-garden-border mb-3 text-left"
+              onClick={() => { setShowAddSheet(false); setShowTeamModal(true) }}
+            >
+              <span className="text-xl">👥</span>
+              <div>
+                <div className="text-sm font-medium text-garden-text">New Team</div>
+                <div className="text-xs text-garden-muted">Create a team of agents</div>
+              </div>
+            </button>
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-garden-bg border border-garden-border text-left"
+              onClick={() => { setShowAddSheet(false); openAgentModal() }}
+            >
+              <span className="text-xl">🤖</span>
+              <div>
+                <div className="text-sm font-medium text-garden-text">Deploy Agent</div>
+                <div className="text-xs text-garden-muted">Add an agent to a team</div>
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* TEAM MODAL */}
       {showTeamModal && (
