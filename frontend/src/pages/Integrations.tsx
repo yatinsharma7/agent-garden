@@ -79,7 +79,7 @@ export function Integrations() {
         </a>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-8 py-8 max-w-3xl w-full mx-auto">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8 max-w-3xl w-full mx-auto">
         <div className="mb-8">
           <h1 className="text-xl font-semibold text-garden-text">Integrations</h1>
           <p className="text-sm text-garden-muted mt-1">
@@ -108,7 +108,7 @@ export function Integrations() {
               return (
                 <div
                   key={connector.id}
-                  className="bg-garden-surface border border-garden-border rounded-xl p-5 flex items-center gap-5"
+                  className="bg-garden-surface border border-garden-border rounded-xl p-4 md:p-5 flex items-center gap-4 md:gap-5"
                 >
                   {/* Icon */}
                   <div
