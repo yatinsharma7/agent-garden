@@ -5,8 +5,23 @@ import { TeamCluster } from '@/components/garden/TeamCluster'
 import { ChatPanel } from '@/components/chat/ChatPanel'
 import { BottomNav } from '@/components/nav/BottomNav'
 import { TEAM_COLORS, ALL_ROLES } from '@/lib/constants'
+import { ModelPicker } from '@/components/models/ModelPicker'
+import { DEFAULT_MODEL, getModel } from '@/lib/models'
 import type { AgentRole } from '@/types'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+
+class SmartPointerSensor extends PointerSensor {
+  static activators = [
+    {
+      eventName: 'onPointerDown' as const,
+      handler: ({ nativeEvent: event }: { nativeEvent: PointerEvent }) => {
+        if (!event.isPrimary || event.button !== 0) return false
+        if ((event.target as HTMLElement).closest('[data-no-dnd]')) return false
+        return true
+      },
+    },
+  ]
+}
 import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
@@ -43,8 +58,10 @@ export function App() {
   const [agentRole, setAgentRole] = useState<AgentRole>('Engineer')
   const [agentTeam, setAgentTeam] = useState('')
   const [agentSpecialty, setAgentSpecialty] = useState('')
+  const [agentModel, setAgentModel] = useState(DEFAULT_MODEL)
+  const [agentModalStep, setAgentModalStep] = useState<'details' | 'model'>('details')
 
-  const sensors = useSensors(useSensor(PointerSensor, {
+  const sensors = useSensors(useSensor(SmartPointerSensor, {
     activationConstraint: { distance: 8 },
   }))
 
@@ -88,15 +105,17 @@ export function App() {
 
   const handleAddAgent = async () => {
     if (!agentName.trim() || !agentTeam) return
-    const agent = await agentsApi.create({ name: agentName, role: agentRole, team_id: agentTeam, specialty: agentSpecialty })
+    const agent = await agentsApi.create({ name: agentName, role: agentRole, team_id: agentTeam, specialty: agentSpecialty, model: agentModel })
     addAgent(agent)
-    setAgentName(''); setAgentSpecialty('')
+    setAgentName(''); setAgentSpecialty(''); setAgentModel(DEFAULT_MODEL)
+    setAgentModalStep('details')
     setShowAgentModal(false)
   }
 
   const openAgentModal = (teamId?: string) => {
     setPreselectedTeam(teamId || null)
     setAgentTeam(teamId || teams[0]?.id || '')
+    setAgentModalStep('details')
     setShowAgentModal(true)
   }
 
@@ -290,24 +309,56 @@ export function App() {
 
       {/* AGENT MODAL */}
       {showAgentModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onClick={() => setShowAgentModal(false)}>
-          <div className="bg-garden-surface border border-garden-border2 rounded-lg p-6 w-full max-w-[420px] mx-4" onClick={e => e.stopPropagation()}>
-            <div className="text-base font-semibold mb-4">Deploy Agent</div>
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">AGENT NAME</label>
-            <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Nova, Axiom, Codexa" value={agentName} onChange={e => setAgentName(e.target.value)} autoFocus />
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">ROLE</label>
-            <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" value={agentRole} onChange={e => setAgentRole(e.target.value as AgentRole)}>
-              {ALL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-            </select>
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">TEAM</label>
-            <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" value={agentTeam} onChange={e => setAgentTeam(e.target.value)}>
-              {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">SPECIALTY / FOCUS</label>
-            <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-4" placeholder="e.g. distributed systems, ETL pipelines" value={agentSpecialty} onChange={e => setAgentSpecialty(e.target.value)} />
-            <div className="flex justify-end gap-2">
-              <button className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all" onClick={() => setShowAgentModal(false)}>Cancel</button>
-              <button className="font-mono text-[11px] px-3 py-1.5 bg-garden-accent text-garden-bg rounded font-semibold hover:bg-garden-accent2 transition-all" onClick={handleAddAgent}>Deploy Agent</button>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center" onClick={() => { setShowAgentModal(false); setAgentModalStep('details') }}>
+          <div className="bg-garden-surface border border-garden-border2 rounded-t-2xl md:rounded-xl w-full max-w-[520px] mx-0 md:mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
+
+            {/* Step indicator */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-garden-border">
+              <div className="text-sm font-semibold text-garden-text">Deploy Agent</div>
+              <div className="flex items-center gap-1.5">
+                <div className={`w-6 h-1.5 rounded-full transition-colors ${agentModalStep === 'details' ? 'bg-garden-accent' : 'bg-garden-border2'}`} />
+                <div className={`w-6 h-1.5 rounded-full transition-colors ${agentModalStep === 'model' ? 'bg-garden-accent' : 'bg-garden-border2'}`} />
+              </div>
+            </div>
+
+            <div className="px-5 py-4 max-h-[75vh] overflow-y-auto">
+              {agentModalStep === 'details' ? (
+                <>
+                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">AGENT NAME</label>
+                  <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Nova, Axiom, Codexa" value={agentName} onChange={e => setAgentName(e.target.value)} autoFocus />
+                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">ROLE</label>
+                  <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" value={agentRole} onChange={e => setAgentRole(e.target.value as AgentRole)}>
+                    {ALL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+                  </select>
+                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">TEAM</label>
+                  <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" value={agentTeam} onChange={e => setAgentTeam(e.target.value)}>
+                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">SPECIALTY / FOCUS</label>
+                  <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent" placeholder="e.g. distributed systems, ETL pipelines" value={agentSpecialty} onChange={e => setAgentSpecialty(e.target.value)} />
+                </>
+              ) : (
+                <ModelPicker value={agentModel} onChange={setAgentModel} />
+              )}
+            </div>
+
+            <div className="flex justify-between gap-2 px-5 py-4 border-t border-garden-border">
+              {agentModalStep === 'details' ? (
+                <>
+                  <button className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all" onClick={() => setShowAgentModal(false)}>Cancel</button>
+                  <button className="font-mono text-[11px] px-4 py-1.5 bg-garden-accent text-garden-bg rounded font-semibold hover:bg-garden-accent2 transition-all" onClick={() => agentName.trim() && setAgentModalStep('model')}>
+                    Next: Choose Model →
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all" onClick={() => setAgentModalStep('details')}>← Back</button>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-[10px] text-garden-dim">{getModel(agentModel).name}</span>
+                    <button className="font-mono text-[11px] px-4 py-1.5 bg-garden-accent text-garden-bg rounded font-semibold hover:bg-garden-accent2 transition-all" onClick={handleAddAgent}>Deploy Agent</button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>

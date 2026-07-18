@@ -30,6 +30,7 @@ export interface Agent {
   role: AgentRole
   team_id: string
   specialty?: string
+  model?: string
   status: AgentStatus
   created_at: string
 }

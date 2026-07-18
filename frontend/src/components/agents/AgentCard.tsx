@@ -1,6 +1,10 @@
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { type Agent, type Team } from '@/types'
 import { ROLE_COLORS, ROLE_EMOJIS } from '@/lib/constants'
+import { getModel } from '@/lib/models'
 import { useGardenStore } from '@/lib/store'
+import { AgentSettings } from './AgentSettings'
 import clsx from 'clsx'
 
 interface Props {
@@ -12,6 +16,7 @@ interface Props {
 export function AgentCard({ agent, team, lastMessage }: Props) {
   const { activeAgentId, openPanel } = useGardenStore()
   const isActive = activeAgentId === agent.id
+  const [showSettings, setShowSettings] = useState(false)
   const roleColor = ROLE_COLORS[agent.role] || '#6b8f6e'
   const emoji = ROLE_EMOJIS[agent.role] || '🤖'
 
@@ -19,6 +24,7 @@ export function AgentCard({ agent, team, lastMessage }: Props) {
 
   return (
     <div
+      data-no-dnd
       className={clsx(
         'bg-garden-bg border rounded-md p-3 transition-all',
         isActive ? 'border-garden-accent' : 'border-garden-border hover:border-garden-border2 hover:-translate-y-px'
@@ -67,7 +73,18 @@ export function AgentCard({ agent, team, lastMessage }: Props) {
 
       {/* Footer */}
       <div className="flex items-center justify-between mt-2">
-        <span className="font-mono text-[9px] text-garden-dim tracking-wide">{agent.specialty || ''}</span>
+        <button
+          className="font-mono text-[9px] px-1.5 py-0.5 rounded border text-garden-dim border-garden-border hover:border-garden-border2 hover:text-garden-text transition-all flex items-center gap-1"
+          style={{ background: `${getModel(agent.model ?? '').color}18` }}
+          onClick={() => setShowSettings(true)}
+          title="Agent settings"
+        >
+          <svg width="8" height="8" viewBox="0 0 10 10" fill="none">
+            <circle cx="5" cy="5" r="1.5" stroke="currentColor" strokeWidth="1.2"/>
+            <path d="M5 1v1M5 8v1M1 5h1M8 5h1M2.2 2.2l.7.7M7.1 7.1l.7.7M7.8 2.2l-.7.7M2.9 7.1l-.7.7" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+          </svg>
+          {getModel(agent.model ?? '').name}
+        </button>
         <button
           className="font-mono text-[10px] px-2 py-0.5 bg-garden-accent/10 text-garden-accent border border-garden-border2 rounded hover:bg-garden-accent hover:text-garden-bg transition-all"
           onPointerDown={e => e.stopPropagation()}
@@ -76,6 +93,11 @@ export function AgentCard({ agent, team, lastMessage }: Props) {
           CHAT →
         </button>
       </div>
+
+      {showSettings && createPortal(
+        <AgentSettings agent={agent} onClose={() => setShowSettings(false)} />,
+        document.body
+      )}
     </div>
   )
 }
