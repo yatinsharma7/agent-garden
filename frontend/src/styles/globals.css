@@ -4,14 +4,40 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --g-bg: 10 15 13;
+  --g-surface: 17 23 18;
+  --g-surface2: 24 32 25;
+  --g-border: 30 43 31;
+  --g-border2: 42 61 43;
+  --g-accent: 74 222 128;
+  --g-accent2: 134 239 172;
+  --g-text: 226 240 228;
+  --g-muted: 107 143 110;
+  --g-dim: 61 92 63;
+}
+
+:root.light {
+  --g-bg: 246 248 246;
+  --g-surface: 255 255 255;
+  --g-surface2: 238 243 238;
+  --g-border: 221 229 221;
+  --g-border2: 196 210 196;
+  --g-accent: 22 163 74;
+  --g-accent2: 21 128 61;
+  --g-text: 22 36 26;
+  --g-muted: 93 122 96;
+  --g-dim: 148 171 150;
+}
+
 * { box-sizing: border-box; }
 
 body {
-  background: #0a0f0d;
-  color: #e2f0e4;
+  background: rgb(var(--g-bg));
+  color: rgb(var(--g-text));
   margin: 0;
 }
 
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a3d2b; border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgb(var(--g-border2)); border-radius: 2px; }

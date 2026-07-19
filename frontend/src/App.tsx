@@ -1,14 +1,12 @@
-import { useState, useEffect } from 'react'
 import { useGardenStore } from '@/lib/store'
-import { teamsApi, agentsApi } from '@/lib/api'
+import { teamsApi } from '@/lib/api'
 import { TeamCluster } from '@/components/garden/TeamCluster'
-import { ChatPanel } from '@/components/chat/ChatPanel'
-import { BottomNav } from '@/components/nav/BottomNav'
-import { TEAM_COLORS, ALL_ROLES } from '@/lib/constants'
-import { ModelPicker } from '@/components/models/ModelPicker'
-import { DEFAULT_MODEL, getModel } from '@/lib/models'
-import type { AgentRole } from '@/types'
+import { ViewToggle } from '@/components/nav/ViewToggle'
+import { ThemeToggle } from '@/components/nav/ThemeToggle'
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 class SmartPointerSensor extends PointerSensor {
   static activators = [
@@ -22,9 +20,6 @@ class SmartPointerSensor extends PointerSensor {
     },
   ]
 }
-import { SortableContext, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 function SortableTeamCluster(props: React.ComponentProps<typeof TeamCluster>) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: props.team.id })
@@ -42,37 +37,14 @@ function SortableTeamCluster(props: React.ComponentProps<typeof TeamCluster>) {
 }
 
 export function App() {
-  const { teams, agents, messages, activeTeamId, teamOrder, setTeams, setAgents, addTeam, removeTeam, addAgent, setActiveTeam, setTeamOrder } = useGardenStore()
-  const [showTeamModal, setShowTeamModal] = useState(false)
-  const [showAgentModal, setShowAgentModal] = useState(false)
-  const [showAddSheet, setShowAddSheet] = useState(false)
-  const [_preselectedTeam, setPreselectedTeam] = useState<string | null>(null)
-
-  // Team form state
-  const [teamName, setTeamName] = useState('')
-  const [teamField, setTeamField] = useState('')
-  const [teamColor, setTeamColor] = useState(TEAM_COLORS[0].value)
-
-  // Agent form state
-  const [agentName, setAgentName] = useState('')
-  const [agentRole, setAgentRole] = useState<AgentRole>('Engineer')
-  const [agentTeam, setAgentTeam] = useState('')
-  const [agentSpecialty, setAgentSpecialty] = useState('')
-  const [agentModel, setAgentModel] = useState(DEFAULT_MODEL)
-  const [agentModalStep, setAgentModalStep] = useState<'details' | 'model'>('details')
+  const {
+    teams, agents, messages, activeTeamId, teamOrder,
+    removeTeam, setTeamOrder, openTeamModal, openAgentModal,
+  } = useGardenStore()
 
   const sensors = useSensors(useSensor(SmartPointerSensor, {
     activationConstraint: { distance: 8 },
   }))
-
-  // Load data
-  useEffect(() => {
-    teamsApi.list().then(data => {
-      setTeams(data)
-      if (teamOrder.length === 0) setTeamOrder(data.map(t => t.id))
-    })
-    agentsApi.list().then(setAgents)
-  }, [])
 
   const orderedTeams = teamOrder.length > 0
     ? [...teams].sort((a, b) => teamOrder.indexOf(a.id) - teamOrder.indexOf(b.id))
@@ -88,46 +60,20 @@ export function App() {
     setTeamOrder(arrayMove(teamOrder, oldIndex, newIndex))
   }
 
-  const handleAddTeam = async () => {
-    if (!teamName.trim()) return
-    const team = await teamsApi.create({ name: teamName, field: teamField || 'General', color: teamColor })
-    addTeam(team)
-    setTeamOrder([...teamOrder, team.id])
-    setTeamName(''); setTeamField(''); setTeamColor(TEAM_COLORS[0].value)
-    setShowTeamModal(false)
-  }
-
   const handleRemoveTeam = async (id: string) => {
     if (!confirm('Remove team and all its agents?')) return
     await teamsApi.delete(id)
     removeTeam(id)
   }
 
-  const handleAddAgent = async () => {
-    if (!agentName.trim() || !agentTeam) return
-    const agent = await agentsApi.create({ name: agentName, role: agentRole, team_id: agentTeam, specialty: agentSpecialty, model: agentModel })
-    addAgent(agent)
-    setAgentName(''); setAgentSpecialty(''); setAgentModel(DEFAULT_MODEL)
-    setAgentModalStep('details')
-    setShowAgentModal(false)
-  }
-
-  const openAgentModal = (teamId?: string) => {
-    setPreselectedTeam(teamId || null)
-    setAgentTeam(teamId || teams[0]?.id || '')
-    setAgentModalStep('details')
-    setShowAgentModal(true)
-  }
-
   const totalActive = agents.filter(a => a.status === 'thinking').length
 
   return (
-    <div className="flex flex-col h-screen bg-garden-bg text-garden-text font-sans overflow-hidden">
-
-      {/* TOP BAR */}
+    <>
+      {/* PAGE HEADER */}
       <div className="flex items-center justify-between px-4 md:px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="font-mono text-sm font-semibold text-garden-accent tracking-widest">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="md:hidden font-mono text-sm font-semibold text-garden-accent tracking-widest">
             AGENT<span className="text-garden-muted font-normal">GARDEN</span>
           </div>
           <div className="hidden md:flex font-mono text-[11px] text-garden-muted items-center gap-1.5">
@@ -136,11 +82,9 @@ export function App() {
             <span className="text-garden-text">v0.1</span>
           </div>
         </div>
-        <div className="flex gap-2">
-          <a href="/integrations" className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
-            Integrations
-          </a>
-          <button onClick={() => setShowTeamModal(true)} className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
+        <div className="flex gap-2 items-center">
+          <div className="md:hidden"><ThemeToggle /></div>
+          <button onClick={openTeamModal} className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:border-garden-accent hover:text-garden-accent transition-all">
             + Team
           </button>
           <button onClick={() => openAgentModal()} className="hidden md:block font-mono text-[11px] px-3 py-1.5 bg-garden-accent text-garden-bg border border-garden-accent rounded font-semibold hover:bg-garden-accent2 transition-all">
@@ -149,220 +93,59 @@ export function App() {
         </div>
       </div>
 
-      <div className="flex flex-1 overflow-hidden relative">
-
-        {/* SIDEBAR — desktop only */}
-        <div className="hidden md:flex w-[240px] bg-garden-surface border-r border-garden-border flex-col flex-shrink-0 overflow-y-auto">
-          <div className="p-4">
-            <div className="font-mono text-[10px] font-semibold text-garden-dim tracking-widest uppercase mb-2">Teams</div>
-            <div
-              className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer mb-0.5 border ${activeTeamId === null ? 'bg-garden-accent/10 border-garden-border2' : 'border-transparent hover:bg-garden-surface2'}`}
-              onClick={() => setActiveTeam(null)}
-            >
-              <div className="w-2 h-2 rounded-full bg-garden-muted" />
-              <span className="text-sm flex-1">All Teams</span>
-              <span className="font-mono text-[10px] text-garden-muted">{agents.length}</span>
-            </div>
-            {teams.map(t => (
-              <div
-                key={t.id}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer mb-0.5 border ${activeTeamId === t.id ? 'bg-garden-accent/10 border-garden-border2' : 'border-transparent hover:bg-garden-surface2'}`}
-                onClick={() => setActiveTeam(t.id)}
-              >
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
-                <span className="text-sm flex-1 truncate">{t.name}</span>
-                <span className="font-mono text-[10px] text-garden-muted">{agents.filter(a => a.team_id === t.id).length}</span>
-              </div>
-            ))}
-            <div
-              className="flex items-center gap-2 px-2.5 py-1.5 rounded cursor-pointer text-garden-dim text-sm border border-dashed border-garden-border hover:border-garden-accent hover:text-garden-accent transition-all mt-1"
-              onClick={() => setShowTeamModal(true)}
-            >
-              <span>＋</span><span>New Team</span>
-            </div>
-
-          </div>
-
-          {/* Role legend */}
-          <div className="mt-auto border-t border-garden-border p-4">
-            <div className="font-mono text-[10px] font-semibold text-garden-dim tracking-widest uppercase mb-2">Roles</div>
-            {[['#60a5fa', 'Engineer'], ['#f59e0b', 'Data Engineer'], ['#c084fc', 'Architect'], ['#fb7185', 'Lead']].map(([color, label]) => (
-              <div key={label} className="flex items-center gap-2 py-1 text-xs text-garden-muted">
-                <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: color }} />
-                {label}
-              </div>
-            ))}
+      <div className="px-4 md:px-6 pt-4 flex-shrink-0 flex items-start justify-between gap-3">
+        <div>
+          <div className="text-lg font-semibold">{activeTeamId ? teams.find(t => t.id === activeTeamId)?.name : 'Garden Overview'}</div>
+          <div className="text-xs text-garden-muted mt-0.5">
+            {activeTeamId
+              ? `${teams.find(t => t.id === activeTeamId)?.field} · ${agents.filter(a => a.team_id === activeTeamId).length} agents`
+              : `All teams · ${agents.length} agents`}
           </div>
         </div>
-
-        {/* MAIN */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="px-4 md:px-6 pt-4 flex-shrink-0">
-            <div className="text-lg font-semibold">{activeTeamId ? teams.find(t => t.id === activeTeamId)?.name : 'Garden Overview'}</div>
-            <div className="text-xs text-garden-muted mt-0.5">
-              {activeTeamId
-                ? `${teams.find(t => t.id === activeTeamId)?.field} · ${agents.filter(a => a.team_id === activeTeamId).length} agents`
-                : `All teams · ${agents.length} agents`}
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-20 md:pb-4 flex flex-col gap-4">
-            {visibleTeams.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-garden-dim gap-3">
-                <span className="text-5xl opacity-40">🌱</span>
-                <p className="text-sm">No teams yet. Create a team to get started.</p>
-              </div>
-            ) : activeTeamId ? visibleTeams.map(team => (
-              <TeamCluster
-                key={team.id}
-                team={team}
-                agents={agents.filter(a => a.team_id === team.id)}
-                messages={messages}
-                onAddAgent={openAgentModal}
-                onRemoveTeam={handleRemoveTeam}
-              />
-            )) : (
-              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                <SortableContext items={teamOrder} strategy={verticalListSortingStrategy}>
-                  {visibleTeams.map(team => (
-                    <SortableTeamCluster
-                      key={team.id}
-                      team={team}
-                      agents={agents.filter(a => a.team_id === team.id)}
-                      messages={messages}
-                      onAddAgent={openAgentModal}
-                      onRemoveTeam={handleRemoveTeam}
-                    />
-                  ))}
-                </SortableContext>
-              </DndContext>
-            )}
-          </div>
-
-          {/* STATUS BAR */}
-          <div className="flex gap-6 px-6 py-1.5 border-t border-garden-border bg-garden-surface font-mono text-[10px] text-garden-dim flex-shrink-0">
-            <span>agents: <span className="text-garden-accent">{agents.length}</span></span>
-            <span>teams: <span className="text-garden-accent">{teams.length}</span></span>
-            <span>active: <span className="text-garden-accent">{totalActive}</span></span>
-            <span className="ml-auto">powered by claude-sonnet-4-6</span>
-          </div>
+        <div className="md:hidden">
+          <ViewToggle current="garden" />
         </div>
-
       </div>
 
-      {/* CHAT PANEL — full screen overlay */}
-      <ChatPanel />
-
-      {/* BOTTOM NAV — mobile only */}
-      <BottomNav onAdd={() => setShowAddSheet(true)} />
-
-      {/* MOBILE ADD SHEET */}
-      {showAddSheet && (
-        <div className="md:hidden fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowAddSheet(false)}>
-          <div className="w-full bg-garden-surface rounded-t-2xl p-6 pb-10" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-garden-border2 rounded-full mx-auto mb-6" />
-            <div className="font-mono text-[10px] text-garden-dim tracking-widest uppercase mb-4">Add</div>
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-garden-bg border border-garden-border mb-3 text-left"
-              onClick={() => { setShowAddSheet(false); setShowTeamModal(true) }}
-            >
-              <span className="text-xl">👥</span>
-              <div>
-                <div className="text-sm font-medium text-garden-text">New Team</div>
-                <div className="text-xs text-garden-muted">Create a team of agents</div>
-              </div>
-            </button>
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-garden-bg border border-garden-border text-left"
-              onClick={() => { setShowAddSheet(false); openAgentModal() }}
-            >
-              <span className="text-xl">🤖</span>
-              <div>
-                <div className="text-sm font-medium text-garden-text">Deploy Agent</div>
-                <div className="text-xs text-garden-muted">Add an agent to a team</div>
-              </div>
-            </button>
+      <div className="flex-1 overflow-y-auto px-3 md:px-6 py-4 pb-20 md:pb-4 flex flex-col gap-4">
+        {visibleTeams.length === 0 ? (
+          <div className="flex-1 flex flex-col items-center justify-center text-garden-dim gap-3">
+            <span className="text-5xl opacity-40">🌱</span>
+            <p className="text-sm">No teams yet. Create a team to get started.</p>
           </div>
-        </div>
-      )}
+        ) : activeTeamId ? visibleTeams.map(team => (
+          <TeamCluster
+            key={team.id}
+            team={team}
+            agents={agents.filter(a => a.team_id === team.id)}
+            messages={messages}
+            onAddAgent={openAgentModal}
+            onRemoveTeam={handleRemoveTeam}
+          />
+        )) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={teamOrder} strategy={verticalListSortingStrategy}>
+              {visibleTeams.map(team => (
+                <SortableTeamCluster
+                  key={team.id}
+                  team={team}
+                  agents={agents.filter(a => a.team_id === team.id)}
+                  messages={messages}
+                  onAddAgent={openAgentModal}
+                  onRemoveTeam={handleRemoveTeam}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
+      </div>
 
-      {/* TEAM MODAL */}
-      {showTeamModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onClick={() => setShowTeamModal(false)}>
-          <div className="bg-garden-surface border border-garden-border2 rounded-lg p-6 w-full max-w-[420px] mx-4" onClick={e => e.stopPropagation()}>
-            <div className="text-base font-semibold mb-4">New Team</div>
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">TEAM NAME</label>
-            <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Platform Engineering" value={teamName} onChange={e => setTeamName(e.target.value)} autoFocus />
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">FIELD / DOMAIN</label>
-            <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Infrastructure, Analytics" value={teamField} onChange={e => setTeamField(e.target.value)} />
-            <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">COLOR</label>
-            <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-4" value={teamColor} onChange={e => setTeamColor(e.target.value)}>
-              {TEAM_COLORS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-            </select>
-            <div className="flex justify-end gap-2">
-              <button className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all" onClick={() => setShowTeamModal(false)}>Cancel</button>
-              <button className="font-mono text-[11px] px-3 py-1.5 bg-garden-accent text-garden-bg rounded font-semibold hover:bg-garden-accent2 transition-all" onClick={handleAddTeam}>Create Team</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* AGENT MODAL */}
-      {showAgentModal && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-end md:items-center justify-center" onClick={() => { setShowAgentModal(false); setAgentModalStep('details') }}>
-          <div className="bg-garden-surface border border-garden-border2 rounded-t-2xl md:rounded-xl w-full max-w-[520px] mx-0 md:mx-4 overflow-hidden" onClick={e => e.stopPropagation()}>
-
-            {/* Step indicator */}
-            <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-garden-border">
-              <div className="text-sm font-semibold text-garden-text">Deploy Agent</div>
-              <div className="flex items-center gap-1.5">
-                <div className={`w-6 h-1.5 rounded-full transition-colors ${agentModalStep === 'details' ? 'bg-garden-accent' : 'bg-garden-border2'}`} />
-                <div className={`w-6 h-1.5 rounded-full transition-colors ${agentModalStep === 'model' ? 'bg-garden-accent' : 'bg-garden-border2'}`} />
-              </div>
-            </div>
-
-            <div className="px-5 py-4 max-h-[75vh] overflow-y-auto">
-              {agentModalStep === 'details' ? (
-                <>
-                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">AGENT NAME</label>
-                  <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" placeholder="e.g. Nova, Axiom, Codexa" value={agentName} onChange={e => setAgentName(e.target.value)} autoFocus />
-                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">ROLE</label>
-                  <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" value={agentRole} onChange={e => setAgentRole(e.target.value as AgentRole)}>
-                    {ALL_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">TEAM</label>
-                  <select className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent mb-3" value={agentTeam} onChange={e => setAgentTeam(e.target.value)}>
-                    {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                  </select>
-                  <label className="block font-mono text-[11px] text-garden-muted tracking-wide mb-1">SPECIALTY / FOCUS</label>
-                  <input className="w-full bg-garden-bg border border-garden-border2 rounded px-2.5 py-2 text-sm text-garden-text outline-none focus:border-garden-accent" placeholder="e.g. distributed systems, ETL pipelines" value={agentSpecialty} onChange={e => setAgentSpecialty(e.target.value)} />
-                </>
-              ) : (
-                <ModelPicker value={agentModel} onChange={setAgentModel} />
-              )}
-            </div>
-
-            <div className="flex justify-between gap-2 px-5 py-4 border-t border-garden-border">
-              {agentModalStep === 'details' ? (
-                <>
-                  <button className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all" onClick={() => setShowAgentModal(false)}>Cancel</button>
-                  <button className="font-mono text-[11px] px-4 py-1.5 bg-garden-accent text-garden-bg rounded font-semibold hover:bg-garden-accent2 transition-all" onClick={() => agentName.trim() && setAgentModalStep('model')}>
-                    Next: Choose Model →
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button className="font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all" onClick={() => setAgentModalStep('details')}>← Back</button>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-[10px] text-garden-dim">{getModel(agentModel).name}</span>
-                    <button className="font-mono text-[11px] px-4 py-1.5 bg-garden-accent text-garden-bg rounded font-semibold hover:bg-garden-accent2 transition-all" onClick={handleAddAgent}>Deploy Agent</button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      {/* STATUS BAR */}
+      <div className="hidden md:flex gap-6 px-6 py-1.5 border-t border-garden-border bg-garden-surface font-mono text-[10px] text-garden-dim flex-shrink-0">
+        <span>agents: <span className="text-garden-accent">{agents.length}</span></span>
+        <span>teams: <span className="text-garden-accent">{teams.length}</span></span>
+        <span>active: <span className="text-garden-accent">{totalActive}</span></span>
+      </div>
+    </>
   )
 }
