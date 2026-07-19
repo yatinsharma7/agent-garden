@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { authApi } from '@/lib/api'
-import { BottomNav } from '@/components/nav/BottomNav'
+import { ThemeToggle } from '@/components/nav/ThemeToggle'
 
 interface Connection {
   connected: boolean
@@ -61,11 +61,10 @@ export function Integrations() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-garden-bg text-garden-text font-sans overflow-hidden pb-[60px] md:pb-0">
-
-      {/* Header */}
+    <>
+      {/* PAGE HEADER */}
       <div className="flex items-center justify-between px-4 md:px-6 h-[52px] border-b border-garden-border bg-garden-surface flex-shrink-0">
-        <div className="font-mono text-sm font-semibold text-garden-accent tracking-widest">
+        <div className="md:hidden font-mono text-sm font-semibold text-garden-accent tracking-widest">
           AGENT<span className="text-garden-muted font-normal">GARDEN</span>
         </div>
         <div className="hidden md:flex font-mono text-[11px] text-garden-muted items-center gap-1.5">
@@ -73,12 +72,10 @@ export function Integrations() {
           <span>garden</span><span className="text-garden-dim">/</span>
           <span className="text-garden-text">integrations</span>
         </div>
-        <a href="/" className="hidden md:block font-mono text-[11px] px-3 py-1.5 border border-garden-border2 rounded text-garden-muted hover:text-garden-text transition-all">
-          ← Garden
-        </a>
+        <div className="md:hidden"><ThemeToggle /></div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8 max-w-3xl w-full mx-auto">
+      <div className="flex-1 overflow-y-auto px-4 md:px-8 py-6 md:py-8 pb-20 md:pb-8 max-w-3xl w-full mx-auto">
         <div className="mb-8">
           <h1 className="text-xl font-semibold text-garden-text">Integrations</h1>
           <p className="text-sm text-garden-muted mt-1">
@@ -165,8 +162,6 @@ export function Integrations() {
           </div>
         )}
       </div>
-
-      <BottomNav onAdd={() => {}} />
-    </div>
+    </>
   )
 }

@@ -12,6 +12,9 @@ interface GardenStore {
   activeAgentId: string | null
   panelOpen: boolean
   teamOrder: string[] // ordered team ids
+  teamModalOpen: boolean
+  agentModalOpen: boolean
+  agentModalTeamId: string | null
 
   // Actions
   setTeams: (teams: Team[]) => void
@@ -30,6 +33,10 @@ interface GardenStore {
   setActiveAgent: (id: string | null) => void
   openPanel: (agentId: string) => void
   closePanel: () => void
+  openTeamModal: () => void
+  closeTeamModal: () => void
+  openAgentModal: (teamId?: string) => void
+  closeAgentModal: () => void
 }
 
 export const useGardenStore = create<GardenStore>((set) => ({
@@ -40,6 +47,9 @@ export const useGardenStore = create<GardenStore>((set) => ({
   activeAgentId: null,
   panelOpen: false,
   teamOrder: JSON.parse(localStorage.getItem('teamOrder') || '[]'),
+  teamModalOpen: false,
+  agentModalOpen: false,
+  agentModalTeamId: null,
 
   setTeams: (teams) => set({ teams }),
   setTeamOrder: (order) => {
@@ -69,4 +79,8 @@ export const useGardenStore = create<GardenStore>((set) => ({
   setActiveAgent: (id) => set({ activeAgentId: id }),
   openPanel: (agentId) => set({ activeAgentId: agentId, panelOpen: true }),
   closePanel: () => set({ panelOpen: false, activeAgentId: null }),
+  openTeamModal: () => set({ teamModalOpen: true }),
+  closeTeamModal: () => set({ teamModalOpen: false }),
+  openAgentModal: (teamId) => set({ agentModalOpen: true, agentModalTeamId: teamId ?? null }),
+  closeAgentModal: () => set({ agentModalOpen: false, agentModalTeamId: null }),
 }))

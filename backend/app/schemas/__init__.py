@@ -62,6 +62,7 @@ class AgentBase(BaseModel):
     role: AgentRole
     team_id: UUID4
     specialty: Optional[str] = None
+    model: Optional[str] = "claude-sonnet-5"
 
 class AgentCreate(AgentBase):
     pass
@@ -72,6 +73,7 @@ class AgentUpdate(BaseModel):
     team_id: Optional[UUID4] = None
     specialty: Optional[str] = None
     status: Optional[AgentStatus] = None
+    model: Optional[str] = None
 
 class Agent(AgentBase):
     id: UUID4

@@ -73,8 +73,9 @@ async def chat(payload: ChatRequest):
 
         # Agentic loop — keep calling Claude until it gives a final text response
         while True:
+            agent_model = agent.get("model") or settings.CLAUDE_MODEL
             response = await anthropic.messages.create(
-                model=settings.CLAUDE_MODEL,
+                model=agent_model,
                 max_tokens=1024,
                 system=build_system_prompt(agent, team),
                 messages=messages,
